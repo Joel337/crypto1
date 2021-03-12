@@ -1,4 +1,5 @@
 import random
+import math
 
 #constants
 IN_LENGTH = 500
@@ -47,13 +48,13 @@ def encrypt(string, key):
 
     #print("The keystream, based on \'" + key + "\' is: \n")
     #print(index_cipher)
-    
-    # turn the input string into an array of numerical values. Using all caps ("UPPER") 
+
+    # turn the input string into an array of numerical values. Using all caps ("UPPER")
     while i < len(string):
         index = UPPER.find(string[i])
         index_done.append((index + index_cipher[i]) % len(UPPER))
         i=i+1
-    
+
     for character in index_done:
         string_ciphered+=UPPER[character]
 
@@ -95,15 +96,15 @@ def iterateKPs(c_string, confidence):
                 counter+=1
                 values.append(value)
         counts.append(counter)
-    
+
 
     #Find the comparative index lengths to determine confidence.  A large gap indicates higher confidence.
     counts_copy = counts
     m1 = sorted(counts_copy)[0]
     m2 = sorted(counts_copy)[1]
     confidence = int(m2)-int(m1)
-    #The ciphertext is most likely from the plaintext where the key has the least entropy. e.g. if the key is "MARY", each shift can only be by one of 4 values.  
-    #The minimum count finds this reliably until the key is the length of the alphabet.  At that point we would need to add some features. 
+    #The ciphertext is most likely from the plaintext where the key has the least entropy. e.g. if the key is "MARY", each shift can only be by one of 4 values.
+    #The minimum count finds this reliably until the key is the length of the alphabet.  At that point we would need to add some features.
     return counts.index(min(counts)), confidence
 
 #find the minimum number of characters needed to create a key for the word.  Return that value and the key.
@@ -132,7 +133,7 @@ def getCommonality(word_index_info):
     for item in word_index_info:
         ordered.append(item[1])
     ordered.sort()
-    
+
     i = 0
     while i < 3:
         for item in word_index_info:
@@ -154,7 +155,7 @@ def forceDict(cipher_text, key_guess):
     while i < len(cipher_text):
         flow_control = 0
         for word in dictionary:
-            if testWord(word, cipher_text[i:(i+len(word)+1)], key_guess): 
+            if testWord(word, cipher_text[i:(i+len(word)+1)], key_guess):
                 decrypted+=(word + " ")
                 found_counter += 1
                 i+=(len(word)+1)
@@ -162,8 +163,95 @@ def forceDict(cipher_text, key_guess):
         if flow_control == 0:
             decrypted+=cipher_text[i]
             i+=1
- 
+
     return decrypted, found_counter
+
+def subtract_letters(message_in, cipher_in):
+    #using letter_key to save one stepp
+
+    out_location = ((UPPER.find(cipher_in)-LOWER.find(message_in)) % 27)
+
+    #wrapping around should the subtraction end up below zero
+    return UPPER[out_location];
+
+# Start Backup Test
+def test_1_backup(plaintext, cipher):
+        key_guess_out = "";
+        #key_iteration_top is the reuslt of
+        key_iteration_success = 0;
+        #MAX Length of key in test for itteration
+        length = 4;
+
+        key_iteration_results = test_1_backup_key_reveal_itteration(plaintext, cipher,length);
+        #itterates through the potential plain texts to find results
+        while key_iteration_success<=0 and length<25:
+            key_iteration_results = test_1_backup_key_reveal_itteration(plaintext, cipher, length);
+            key_iteration_success = key_iteration_results[2];
+            length+=1;
+            pass
+        return key_iteration_results;
+
+def test_1_backup_key_reveal_itteration(plaintext, cipher, length):
+        message_out = 0
+        j=0;
+        correct_guess = 0
+        key_out = 0;
+        while j<5:
+            key_guess = [];
+            i=0;
+            counter = 0;
+                # new
+            key_array = set()
+            while i<500 and len(key_array)<length:
+                #subtracts the cipher from plaintext to get potential value
+                potential_key = subtract_letters(plaintext[j][i],cipher[i]);
+                key_array.add(potential_key)
+                i+=1;
+                pass
+            key_verified = test_1_verify__key(cipher, plaintext[j], key_array)
+            if key_verified==1:
+                key_out = key_array
+                message_out = j
+                correct_guess = 1
+                return [key_out, message_out, 2];
+            else:
+                key_out = -1;
+            j+=1;
+        pass
+        if key_out == -1:
+            correct_guess = 0;
+        return [key_out, message_out, correct_guess];
+
+def test_1_verify__key(cipher, plaintext_value, key_array):
+    #key verification is done by calculating the number of random characters that are found using a giving key.  If the random characters is an exact match, the key is 100% accurate
+    global chance_cipher_random;
+    number_of_randoms_expected = len(cipher)-500;
+    number_of_randoms_recieved = 0;
+    length_of_cipher = len(cipher);
+
+    #position in message
+    i=0;
+    #position in cipher
+    j=0;
+    letter_key_counter = {"A":0,"B":0,"C":0,"D":0,"E":0,"F":0,"G":0,"H":0,"I":0,"J":0,"K":0,"L":0,"M":0,"N":0,"O":0,"P":0,"Q":0,"R":0,"S":0,"T":0,"U":0,"V":0,"W":0,"X":0,"Y":0,"Z":0," ":0}
+    while j<length_of_cipher and i<500:
+        potential_key_value = subtract_letters(plaintext_value[i],cipher[j]);
+        letter_key_counter[potential_key_value]+=1;
+        if potential_key_value in key_array:
+            i+=1
+            j+=1
+        else:
+            j+=1
+            number_of_randoms_recieved+=1
+    if number_of_randoms_recieved!=number_of_randoms_expected:
+        return 0;
+    elif(number_of_randoms_recieved == number_of_randoms_expected):
+        return 1;
+
+
+
+
+
 
 #This does a character by character analyis to see if the word can be formed from the probable key
 def testWord(word, cipher_text, key_guess):
@@ -174,7 +262,7 @@ def testWord(word, cipher_text, key_guess):
        #word=word[0:len(cipher_text)] #this doesn't appear to be working, instead we will just give up on partial words for now
        return False
     while i < (len(word)-1):
-        reqValue = ((UPPER.find(cipher_text[i]) - UPPER.find(word[i])) % 27) 
+        reqValue = ((UPPER.find(cipher_text[i]) - UPPER.find(word[i])) % 27)
         #print("cipher " + cipher_text[i]+ "and the word character " + word[i] + " looking for " + str(reqValue))
         #the best case is that the chars line up directly with a possible key value (no random injected characters. If they line up, add a 1 to the array.
         if reqValue in key_guess:
@@ -185,7 +273,7 @@ def testWord(word, cipher_text, key_guess):
         else:
             validity_array.append(0)
         i+=1
-    
+
     #We can look at how many valid chars we have and how many invalid chars we have. Not clear to me what the right number is here.
     if (len(word) - sum(validity_array)) > 1:
         return False
@@ -238,21 +326,29 @@ keyGuess = getCommonality(minWordKeys)
 
 decryption = forceDict(ret, keyGuess)
 
+backup_results = test_1_backup([kp1,kp2,kp3,kp4,kp5], ret)
 #we should test to set these at accurate measures. these are just guesses.
-#if the confidence is higher than 5, we have likely found a known plaintext. We can also return that answer and break before processing the case 2 stuff.  
+#if the confidence is higher than 5, we have likely found a known plaintext. We can also return that answer and break before processing the case 2 stuff.
 if confidence > 5:
     print("Probable known plaintext is case " + str(prob_KP[0]+1) + ". The confidence level is " + str(prob_KP[1]))
     print("That plaintext is: " + answer)
+    print(test_1_backup([kp1,kp2,kp3,kp4,kp5], ret));
 
-elif decryption[1] > 40:
+elif decryption[1] > 40 and backup_results[2]==0:
     print("We are guessing this is a case two text, and our decryption guess is: \n")
     print(decryption[0])
+
+elif  backup_results[2]>0:
+    print("Probable known plaintext is case " + str(backup_results[1]+1) + ". The confidence level is 1")
+    print("Probable Key is ", end="")
+    print(backup_results[0])
+
 elif (decryption[1] < 25 and confidence > 2 ):
     print("We aren't really sure on this one, we are guessing a known plaintext, " + str(prob_KP[0]+1))
+
     print(answer)
 else:
+
     print("You won this round, we don't know. In an attempt to salvage some credit, here are our guesses:")
     print("maybe known plaintext " + str(prob_KP[0]+1) + "or a case two text decrypted as follows: ")
     print(decryption[0])
-
-
