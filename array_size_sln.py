@@ -1,5 +1,5 @@
-import random
-import math
+import random, itertools, math
+from collections import Counter, OrderedDict 
 
 #constants
 IN_LENGTH = 500
