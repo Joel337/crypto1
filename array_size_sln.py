@@ -346,7 +346,7 @@ confidence = prob_KP[1]
 
 
 #Start looking at the dictionary/begin case 2 analysis. Right now it has a few large words. I think a better approach may be to pick words with as many different chars as possible
-bigwords = ["intuitiveness", "faultlessly", "hermeneutics", "unconvertible", "photocompose"]
+bigwords = ["intuitiveness", "faultlessly", "hermeneutics", "unconvertible", "photocompose", "awesomeness", "attentional", "miserabilia"]
 
 minWordKeys = []
 for word in bigwords:
