@@ -126,25 +126,55 @@ def findPossibileWords(word, ciphertext):
 
 # we can fine tune this, but I assume that for 500 chars over 40 words in the dictionary, we will have at least 3/5 of the words I picked. (**I haven't mathed this**)
 def getCommonality(word_index_info):
-    threeIndex = []
-    jointIndex = []
+jointIndex = []
     ordered = []
-    #right now I am just taking the three words with the smallest keyspace. alternatively we could look for overlap.
+    #print(word_index_info)
+    #right now I am just taking the three words with the smallest keyspace. <-- this doesn't work well. We need to look for overlap.
     for item in word_index_info:
-        ordered.append(item[1])
-    ordered.sort()
+        ordered.append(item[0])
+    
+    max = 0
+    root = []
+    for a, b in itertools.permutations(ordered, 2):
+        common = len(set(a) & set(b))
+        distinct = (len(set(a) | set(b)))
+        #print("comparing ")
+        #print(a, b)
+        #First find the pair with the greatest commonality. 
+        if (common / distinct * 100) > max:
+            max = (common / distinct * 100)
+            jointIndex = a + b
+            #print((common / distinct * 100))
+    
+    print("Guess here (pre-straight frequency) is ")
+    print((set(jointIndex)))
+    #if we don't have super high overlap, we add additional characters based on their frequency of appearance.  I don't know the right number of additions.
+    if max < 70:
+        merged = itertools.chain.from_iterable(ordered)
+        count = Counter(merged)
+        count = count.most_common()
+        #print(count)
+        i = 0
+        while i < 5: #we're doing 5 chars?
+            jointIndex.append(list(count)[i][0])
+            #print("added " + str(list(count)[i][0]))
+            i+=1
 
-    i = 0
-    while i < 3:
-        for item in word_index_info:
-            if item[1] == ordered[i]:
-                threeIndex.append(item[0])
-        i+=1
+    print("max is " + str(max))
+    print("Guess post frequency is ")
+    print(list(set(jointIndex)))
+    # #From the root common pair, add other keys as appropriate. In short, trying to improve accuracy here by checking for additional overlap and extending the possible key
+    j = 0
+    while j < len(word_index_info):
+        common = len(set(jointIndex) & set(word_index_info[j][0]))
+        distinct = (len(set(jointIndex) | set(word_index_info[j][0])))
+        #if the commonality is over 80% we add the word. That number is arbitrary. 
+        if (common / distinct * 100) > 80:
+            jointIndex += set(word_index_info[j][0])
+        j+=1
 
-    jointIndex = threeIndex[0] + threeIndex[1] + threeIndex[2]
     jointIndex = list(set(jointIndex))
-
-    print("my key guess is ")
+    print("my final key guess is ")
     print(jointIndex)
     return jointIndex
 
