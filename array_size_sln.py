@@ -305,7 +305,7 @@ def testWord(word, cipher_text, key_guess):
         i+=1
 
     #We can look at how many valid chars we have and how many invalid chars we have. Not clear to me what the right number is here.
-    if (len(word) - sum(validity_array)) > 1:
+    if (len(word) - sum(validity_array)) > 2:
         return False
     else:
         return True
