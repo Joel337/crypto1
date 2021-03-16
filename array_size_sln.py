@@ -179,12 +179,13 @@ jointIndex = []
     return jointIndex
 
 def forceDict(cipher_text, key_guess):
+    dictionary2 = sorted(dictionary, key=len, reverse=True)
     found_counter = 0
     i = 0
     decrypted = ""
     while i < len(cipher_text):
         flow_control = 0
-        for word in dictionary:
+        for word in dictionary2:
             if testWord(word, cipher_text[i:(i+len(word)+1)], key_guess):
                 decrypted+=(word + " ")
                 found_counter += 1
