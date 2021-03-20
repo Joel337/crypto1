@@ -1,5 +1,5 @@
 import random, itertools, math
-from collections import Counter, OrderedDict 
+from collections import Counter, OrderedDict
 
 #constants
 IN_LENGTH = 500
@@ -126,13 +126,13 @@ def findPossibileWords(word, ciphertext):
 
 # we can fine tune this, but I assume that for 500 chars over 40 words in the dictionary, we will have at least 3/5 of the words I picked. (**I haven't mathed this**)
 def getCommonality(word_index_info):
-jointIndex = []
+    jointIndex = []
     ordered = []
     #print(word_index_info)
     #right now I am just taking the three words with the smallest keyspace. <-- this doesn't work well. We need to look for overlap.
     for item in word_index_info:
         ordered.append(item[0])
-    
+
     max = 0
     root = []
     for a, b in itertools.permutations(ordered, 2):
@@ -140,12 +140,12 @@ jointIndex = []
         distinct = (len(set(a) | set(b)))
         #print("comparing ")
         #print(a, b)
-        #First find the pair with the greatest commonality. 
+        #First find the pair with the greatest commonality.
         if (common / distinct * 100) > max:
             max = (common / distinct * 100)
             jointIndex = a + b
             #print((common / distinct * 100))
-    
+
     print("Guess here (pre-straight frequency) is ")
     print((set(jointIndex)))
     #if we don't have super high overlap, we add additional characters based on their frequency of appearance.  I don't know the right number of additions.
@@ -168,7 +168,7 @@ jointIndex = []
     while j < len(word_index_info):
         common = len(set(jointIndex) & set(word_index_info[j][0]))
         distinct = (len(set(jointIndex) | set(word_index_info[j][0])))
-        #if the commonality is over 80% we add the word. That number is arbitrary. 
+        #if the commonality is over 80% we add the word. That number is arbitrary.
         if (common / distinct * 100) > 80:
             jointIndex += set(word_index_info[j][0])
         j+=1
@@ -207,55 +207,78 @@ def subtract_letters(message_in, cipher_in):
 
 # Start Backup Test
 def test_1_backup(plaintext, cipher):
-        key_guess_out = "";
-        #key_iteration_top is the reuslt of
-        key_iteration_success = 0;
-        #MAX Length of key in test for itteration
-        length = 4;
+    key_guess_out = "";
+    #random_characters;
+    k=len(cipher)-500;
+    length=4;
+    skip=-1
+    skip2=-1
+    key_iteration_results = test_1_backup_key_reveal_itteration(plaintext, cipher, length, skip, skip2);
+    key_iteration_top = math.ceil(key_iteration_results[2]);
+    #itterates through the potential plain texts to find results
+    while key_iteration_top<=0 and length<25:
+        if(skip2<length):
+            skip2+=1;
+        elif(skip<length):
+            skip+=1
+            skip2=skip+1;
+        else:
+            length+=1
+            skip=-1
+            skip2=-1;
+        key_iteration_results = test_1_backup_key_reveal_itteration(plaintext, cipher, length, skip, skip2);
+        key_iteration_top = math.ceil(key_iteration_results[2]);
+        pass
+    return key_iteration_results;
 
-        key_iteration_results = test_1_backup_key_reveal_itteration(plaintext, cipher,length);
-        #itterates through the potential plain texts to find results
-        while key_iteration_success<=0 and length<25:
-            key_iteration_results = test_1_backup_key_reveal_itteration(plaintext, cipher, length);
-            key_iteration_success = key_iteration_results[2];
-            length+=1;
-            pass
-        return key_iteration_results;
-
-def test_1_backup_key_reveal_itteration(plaintext, cipher, length):
-        message_out = 0
-        j=0;
-        correct_guess = 0
-        key_out = 0;
-        while j<5:
-            key_guess = [];
-            i=0;
-            counter = 0;
-                # new
-            key_array = set()
-            while i<500 and len(key_array)<length:
-                #subtracts the cipher from plaintext to get potential value
-                potential_key = subtract_letters(plaintext[j][i],cipher[i]);
-                key_array.add(potential_key)
+def test_1_backup_key_reveal_itteration(plaintext, cipher, length, skip, skip2):
+    message_out = 0
+    key_out = ""
+    j=0;
+    i=0;
+    correct_guess = 0
+    key_out = 0;
+    while j<5:
+        i=0;
+        key_guess = [];
+        counter = 0;
+        letter_key_counter = {"A":0,"B":0,"C":0,"D":0,"E":0,"F":0,"G":0,"H":0,"I":0,"J":0,"K":0,"L":0,"M":0,"N":0,"O":0,"P":0,"Q":0,"R":0,"S":0,"T":0,"U":0,"V":0,"W":0,"X":0,"Y":0,"Z":0," ":0}
+        # new
+        key_array = set()
+        skip_shift=0;
+        while i<500 and len(key_array)<length:
+            if(skip == i):
                 i+=1;
-                pass
-            key_verified = test_1_verify__key(cipher, plaintext[j], key_array)
-            if key_verified==1:
+                skip_shift+=1;
+            if(skip2 == i):
+                i+=1;
+                skip_shift+=1;
+            potential_key = subtract_letters(plaintext[j][i-skip_shift],cipher[i]);
+            if letter_key_counter[potential_key]==0:
+                letter_key_counter[potential_key]+=1;
+                key_array.add(potential_key)
+
+            i+=1;
+
+            pass
+        key_verified = test_1_verify__key(cipher, plaintext[j], key_array)
+        if key_verified>0:
+
+            if correct_guess == 0:
                 key_out = key_array
                 message_out = j
                 correct_guess = 1
-                return [key_out, message_out, 2];
             else:
                 key_out = -1;
-            j+=1;
-        pass
-        if key_out == -1:
-            correct_guess = 0;
-        return [key_out, message_out, correct_guess];
+        skip_shift = 0;
+        j+=1;
+    pass
+    if key_out == -1:
+        correct_guess = 0;
+    return [key_out, message_out, correct_guess];
 
 def test_1_verify__key(cipher, plaintext_value, key_array):
     #key verification is done by calculating the number of random characters that are found using a giving key.  If the random characters is an exact match, the key is 100% accurate
-    global chance_cipher_random;
     number_of_randoms_expected = len(cipher)-500;
     number_of_randoms_recieved = 0;
     length_of_cipher = len(cipher);
